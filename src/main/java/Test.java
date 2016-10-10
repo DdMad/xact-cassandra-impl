@@ -16,6 +16,7 @@ public class Test {
         // Connect to the cluster and keyspace "demo"
         cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
         session = cluster.connect("demo");
+        // Create.createTables(session);
 
         // Insert one record into the users table
         session.execute("INSERT INTO users (lastname, age, city, email, firstname) VALUES ('Jones', 35, 'Austin', 'bob@example.com', 'Bob')");

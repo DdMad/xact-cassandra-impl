@@ -1,5 +1,4 @@
 import com.datastax.driver.core.Session;
-import jdk.nashorn.internal.ir.SetSplitState;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
@@ -26,7 +25,7 @@ public class DataLoader {
     private Logger logger;
 
     public DataLoader(String dir) {
-        logger = Logger.getLogger(DbBuilder.class.getName());
+        logger = Logger.getLogger(DatabaseBuilder.class.getName());
         String log4JPropertyFile = System.getProperty("user.dir") + "/log4j.properties";
         Properties p = new Properties();
         try {

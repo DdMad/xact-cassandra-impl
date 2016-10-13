@@ -5,14 +5,14 @@ import org.apache.log4j.PropertyConfigurator;
 import java.io.*;
 import java.util.Properties;
 
-public class DbBuilder {
+public class DatabaseBuilder {
     private String schemaFilePath;
     private BufferedReader br;
 
     private Logger logger;
 
-    public DbBuilder(String path) {
-        logger = Logger.getLogger(DbBuilder.class.getName());
+    public DatabaseBuilder(String path) {
+        logger = Logger.getLogger(DatabaseBuilder.class.getName());
         String log4JPropertyFile = System.getProperty("user.dir") + "/log4j.properties";
         Properties p = new Properties();
         try {

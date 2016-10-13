@@ -21,7 +21,7 @@ public class Test {
         cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
         session = cluster.connect();
 
-        DbBuilder builder = new DbBuilder(System.getProperty("user.dir") + SCHEMA_FILE_PATH);
+        DatabaseBuilder builder = new DatabaseBuilder(System.getProperty("user.dir") + SCHEMA_FILE_PATH);
         try {
             builder.buildDatabase(session);
         } catch (IOException e) {

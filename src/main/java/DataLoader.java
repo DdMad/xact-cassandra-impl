@@ -73,8 +73,8 @@ public class DataLoader {
             String cDiscount = new DecimalFormat("0.0000").format(new BigDecimal(data[15]));
             String cBalance = new DecimalFormat("0.00").format(new BigDecimal(data[16]));
             String query = String.format("INSERT INTO customer (W_ID, D_ID, C_ID, C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_DELIVERY_CNT) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)", data[0], data[1], data[2], cBalance, data[17], data[18], data[19]);
-            String queryConstant = String.format("INSERT INTO customer_constant_data (W_ID, D_ID, C_ID, C_FIRST, C_MIDDLE, C_LAST, C_STREET_1, C_STREET_2, C_CITY, C_STATE, C_ZIP, C_PHONE, C_SINCE, C_CREDIT, C_CREDIT_LIM, C_DISCOUNT) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13], cCreditLim, cDiscount);
-            String queryUnused = String.format("INSERT INTO customer_unused_data (W_ID, D_ID, C_ID, C_DATA) VALUES (%s, %s, %s, %s)", data[0], data[1], data[2], data[20]);
+            String queryConstant = String.format("INSERT INTO customer_constant_data (W_ID, D_ID, C_ID, C_FIRST, C_MIDDLE, C_LAST, C_STREET_1, C_STREET_2, C_CITY, C_STATE, C_ZIP, C_PHONE, C_SINCE, C_CREDIT, C_CREDIT_LIM, C_DISCOUNT) VALUES (%s, %s, %s, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %s, '%s', %s, %s)", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13], cCreditLim, cDiscount);
+            String queryUnused = String.format("INSERT INTO customer_unused_data (W_ID, D_ID, C_ID, C_DATA) VALUES (%s, %s, %s, '%s')", data[0], data[1], data[2], data[20]);
             session.execute(query);
             session.execute(queryConstant);
             session.execute(queryUnused);
@@ -87,7 +87,7 @@ public class DataLoader {
             String[] data = dataLine.split(",");
             String cTax = new DecimalFormat("0.0000").format(new BigDecimal(data[8]));
             String cYtd = new DecimalFormat("0.00").format(new BigDecimal(data[9]));
-            String query = String.format("INSERT INTO district (W_ID, D_ID, D_NAME, D_STREET_1, D_STREET_2, D_CITY, D_STATE, D_ZIP, D_TAX, D_YTD) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], cTax, cYtd);
+            String query = String.format("INSERT INTO district (W_ID, D_ID, D_NAME, D_STREET_1, D_STREET_2, D_CITY, D_STATE, D_ZIP, D_TAX, D_YTD) VALUES (%s, %s, '%s', '%s', '%s', '%s', '%s', '%s', %s, %s)", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], cTax, cYtd);
             String queryNextOId = String.format("INSERT INTO district_next_o_id (W_ID, D_ID, D_NEXT_O_ID) VALUES (%s, %s, %s)", data[0], data[1], data[10]);
             session.execute(query);
             session.execute(queryNextOId);
@@ -99,8 +99,8 @@ public class DataLoader {
         while (dataLine != null) {
             String[] data = dataLine.split(",");
             String iPrice = new DecimalFormat("0.00").format(new BigDecimal(data[2]));
-            String query = String.format("INSERT INTO item (I_ID, I_NAME, I_PRICE, I_IM_ID) VALUES (%s, %s, %s, %s)", data[0], data[1], iPrice, data[3]);
-            String queryUnused = String.format("INSERT INTO item_unused_data (I_ID, I_DATA) VALUES (%s, %s)", data[0], data[4]);
+            String query = String.format("INSERT INTO item (I_ID, I_NAME, I_PRICE, I_IM_ID) VALUES (%s, '%s', %s, %s)", data[0], data[1], iPrice, data[3]);
+            String queryUnused = String.format("INSERT INTO item_unused_data (I_ID, I_DATA) VALUES (%s, '%s')", data[0], data[4]);
             session.execute(query);
             session.execute(queryUnused);
         }
@@ -124,7 +124,7 @@ public class DataLoader {
             String olAmount = new DecimalFormat("0.00").format(new BigDecimal(data[6]));
             String olQuantity = new DecimalFormat("0").format(new BigDecimal(data[8]));
             String query = String.format("INSERT INTO order_line (W_ID, D_ID, O_ID, OL_NUMBER, I_ID, OL_DELIVERY_D, OL_AMOUNT, OL_SUPPLY_W_ID, OL_QUANTITY) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)", data[0], data[1], data[2], data[3], data[4], data[5], olAmount, data[7], olQuantity);
-            String queryUnused = String.format("INSERT INTO order_line_unused_data (W_ID, D_ID, O_ID, OL_NUMBER, OL_DIST_INFO) VALUES (%s, %s, %s, %s, %s)", data[0], data[1], data[2], data[3], data[9]);
+            String queryUnused = String.format("INSERT INTO order_line_unused_data (W_ID, D_ID, O_ID, OL_NUMBER, OL_DIST_INFO) VALUES (%s, %s, %s, %s, '%s')", data[0], data[1], data[2], data[3], data[9]);
             session.execute(query);
             session.execute(queryUnused);
         }
@@ -137,7 +137,7 @@ public class DataLoader {
             String sQuantity = new DecimalFormat("0").format(new BigDecimal(data[2]));
             String sYtd = new DecimalFormat("0.00").format(new BigDecimal(data[3]));
             String query = String.format("INSERT INTO stock (W_ID, I_ID, S_QUANTITY, S_YTD, S_ORDER_CNT, S_REMOTE_CNT) VALUES (%s, %s, %s, %s, %s, %s)", data[0], data[1], sQuantity, sYtd, data[4], data[5]);
-            String queryUnused = String.format("INSERT INTO stock_unused_data (W_ID, I_ID, S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10, S_DATA) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", data[0], data[1], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15], data[16]);
+            String queryUnused = String.format("INSERT INTO stock_unused_data (W_ID, I_ID, S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10, S_DATA) VALUES (%s, %s, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", data[0], data[1], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15], data[16]);
             session.execute(query);
             session.execute(queryUnused);
         }
@@ -149,7 +149,7 @@ public class DataLoader {
             String[] data = dataLine.split(",");
             String w_tax = new DecimalFormat("0.0000").format(new BigDecimal(data[7]));
             String w_ytd = new DecimalFormat("0.00").format(new BigDecimal(data[8]));
-            String query = String.format("INSERT INTO warehouse (W_ID, W_NAME, W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP, W_TAX, W_YTD) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)", data[0], data[1], data[2], data[3], data[4], data[5], data[6], w_tax, w_ytd);
+            String query = String.format("INSERT INTO warehouse (W_ID, W_NAME, W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP, W_TAX, W_YTD) VALUES (%s, '%s', '%s', '%s', '%s', '%s', '%s', %s, %s)", data[0], data[1], data[2], data[3], data[4], data[5], data[6], w_tax, w_ytd);
             session.execute(query);
         }
     }

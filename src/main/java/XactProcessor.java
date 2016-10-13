@@ -61,7 +61,7 @@ public class XactProcessor {
             } else if (type.equals("I")) {
                 processPopularItemXact(session, data);
             } else if (type.equals("T")) {
-                processTopBalanceXact(session, data);
+                processTopBalanceXact(session);
             } else {
                 logger.warn("Wrong transaction type!");
             }
@@ -245,7 +245,19 @@ public class XactProcessor {
 
     }
 
-    private void processTopBalanceXact(Session session, String[] data) {
-        
+    private void processTopBalanceXact(Session session) throws IOException {
+        // Get top 10 customers
+        ResultSet top10 = session.execute(String.format("SELECT W_ID, D_ID, C_ID, C_BALANCE FROM customer LIMIT 10"));
+        for (Row r : top10) {
+            // Get name
+            Row customerConstant = session.execute(String.format("SELECT C_FIRST, C_MIDDLE, C_LAST FROM customer_constant_data WHERE C_ID = %s", r.getString("C_ID"))).one();
+            String wName = session.execute(String.format("SELECT W_NAME FROM warehouse WHERE W_ID = %s", r.getString("W_ID"))).one().getString("W_NAME");
+            String dName = session.execute(String.format("SELECT D_NAME FROM district WHERE D_ID = %s", r.getString("D_ID"))).one().getString("D_NAME");
+
+            // Write output
+            bw.write(String.format("%s,%s,%s,%s,%s,%s", customerConstant.getString("C_FIRST"), customerConstant.getString("C_MIDDLE"), customerConstant.getString("C_LAST"), customerConstant.getDecimal("C_BALANCE").toPlainString(), wName, dName));
+            bw.newLine();
+        }
+        bw.flush();
     }
 }

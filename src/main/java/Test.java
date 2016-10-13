@@ -23,23 +23,23 @@ public class Test {
         cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
         session = cluster.connect();
 
-        DatabaseBuilder builder = new DatabaseBuilder(System.getProperty("user.dir") + SCHEMA_FILE_PATH);
-        try {
-            builder.buildDatabase(session);
-        } catch (IOException e) {
-            System.out.println("Build database failed!");
-            e.printStackTrace();
-        }
-        System.out.println("Build database successfully!");
-
-        DataLoader loader = new DataLoader(System.getProperty("user.dir") + DATA_DIRECTORY);
-        try {
-            loader.loadData(session);
-        } catch (IOException e) {
-            System.out.println("Build database failed!");
-            e.printStackTrace();
-        }
-        System.out.println("Load data successfully!");
+//        DatabaseBuilder builder = new DatabaseBuilder(System.getProperty("user.dir") + SCHEMA_FILE_PATH);
+//        try {
+//            builder.buildDatabase(session);
+//        } catch (IOException e) {
+//            System.out.println("Build database failed!");
+//            e.printStackTrace();
+//        }
+//        System.out.println("Build database successfully!");
+//
+//        DataLoader loader = new DataLoader(System.getProperty("user.dir") + DATA_DIRECTORY);
+//        try {
+//            loader.loadData(session);
+//        } catch (IOException e) {
+//            System.out.println("Build database failed!");
+//            e.printStackTrace();
+//        }
+//        System.out.println("Load data successfully!");
 
         XactProcessor processor = new XactProcessor(System.getProperty("user.dir") + XACT_DIRECTORY);
         try {

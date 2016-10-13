@@ -18,7 +18,7 @@ CREATE TABLE warehouse (W_ID int, W_NAME text, W_STREET_1 text, W_STREET_2 text,
 CREATE TABLE district (W_ID int, D_ID int, D_NAME text, D_STREET_1 text, D_STREET_2 text, D_CITY text, D_STATE text, D_ZIP text, D_TAX decimal, D_YTD decimal, PRIMARY KEY ((W_ID, D_ID)));
 CREATE TABLE district_next_o_id (W_ID int, D_ID int, D_NEXT_O_ID int, PRIMARY KEY ((W_ID, D_ID)));
 CREATE TABLE customer (W_ID int, D_ID int, C_ID int, C_BALANCE decimal, C_YTD_PAYMENT float, C_PAYMENT_CNT int, C_DELIVERY_CNT int, PRIMARY KEY ((W_ID, D_ID, C_ID), C_BALANCE)) WITH CLUSTERING ORDER BY (C_BALANCE DESC);
-CREATE TABLE customer_constant_data (W_ID int, D_ID int, C_ID int, C_FIRST text, C_MIDDLE text, C_LAST text, C_STREET_1 text, C_STREET_2 text, C_CITY text, C_STATE text, C_ZIP text, C_PHONE text, C_SINCE timestamp, C_CREDIT text, C_CREDIT_LIM decimal, C_DISCOUNT decimal, C_DATA text, PRIMARY KEY ((W_ID, D_ID, C_ID)));
+CREATE TABLE customer_constant_data (W_ID int, D_ID int, C_ID int, C_FIRST text, C_MIDDLE text, C_LAST text, C_STREET_1 text, C_STREET_2 text, C_CITY text, C_STATE text, C_ZIP text, C_PHONE text, C_SINCE timestamp, C_CREDIT text, C_CREDIT_LIM decimal, C_DISCOUNT decimal, PRIMARY KEY ((W_ID, D_ID, C_ID)));
 CREATE TABLE customer_unused_data (W_ID int, D_ID int, C_ID int, C_DATA text, PRIMARY KEY ((W_ID, D_ID, C_ID)));
 CREATE TABLE orders (W_ID int, D_ID int, O_ID int, C_ID int, O_CARRIER_ID int, O_OL_CNT decimal, O_ALL_LOCAL decimal, O_ENTRY_D timestamp, PRIMARY KEY ((W_ID, D_ID, O_ID), C_ID));
 CREATE TABLE item (I_ID int, I_NAME text, I_PRICE decimal, I_IM_ID int, PRIMARY KEY (I_ID));

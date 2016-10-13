@@ -162,10 +162,41 @@ public class XactProcessor {
             bw.write(String.format("%s,%s,%s,%s,%s,%s", itemNumberList.get(i), iNameList.get(i), supplyWarehouseList.get(i), quantityList.get(i), olAmountList.get(i), sQuantityList.get(i)));
             bw.newLine();
         }
+        bw.flush();
     }
 
-    private void processPaymentXact(Session session, String[] data) {
+    private void processPaymentXact(Session session, String[] data) throws IOException {
+        String wId = data[1];
+        String dId = data[2];
+        String cId = data[3];
+        String payment = data[4];
 
+        // Get all data
+        Row warehouse = session.execute(String.format("SELECT W_YTD, W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP FROM warehouse WHERE W_ID = %s", wId)).one();
+        Row district = session.execute(String.format("SELECT D_YTD, D_STREET_1, D_STREET_2, D_CITY, D_STATE, D_ZIP FROM district WHERE W_ID = %s AND D_ID = %s", wId, dId)).one();
+        Row customer = session.execute(String.format("SELECT C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT FROM customer WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", wId, dId, cId)).one();
+        Row customerConstant = session.execute(String.format("SELECT * FROM customer_constant_data WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", wId, dId, cId)).one();
+
+        // Compute new balance
+        BigDecimal newBalance = customer.getDecimal("C_BALANCE").subtract(new BigDecimal(payment));
+
+        // Update W_YTD and D_YTD
+        session.execute(String.format("UPDATE warehouse SET W_YTD = %s WHERE W_ID = %s", warehouse.getDecimal("W_YTD").add(new BigDecimal(payment)).toPlainString(), wId));
+        session.execute(String.format("UPDATE district SET D_YTD = %s WHERE W_ID = %s AND D_ID = %s", district.getDecimal("D_YTD").add(new BigDecimal(payment)).toPlainString(), wId, dId));
+
+        // Update C_BALANCE C_YTD_PAYMENT C_PAYMENT_CNT
+        session.execute(String.format("UPDATE customer SET C_BALANCE = %s, C_YTD_PAYMENT = %f, C_PAYMENT_CNT = %d WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", newBalance.toPlainString(), customer.getFloat("C_YTD_PAYMENT") + Float.parseFloat(payment), customer.getInt("C_PAYMENT_CNT") + 1));
+
+        // Write output
+        bw.write(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s", wId, dId, cId, customer.getString("C_FIRST"), customer.getString("C_MIDDLE"), customer.getString("C_LAST"), customer.getString("C_STREET_1"), customer.getString("C_STREET_2"), customer.getString("C_CITY"), customer.getString("C_STATE"), customer.getString("C_ZIP"), customer.getString("C_PHONE"), customer.getString("C_SINCE"), customer.getString("C_CREDIT"), customer.getDecimal("C_CREDIT_LIM").toPlainString(), customer.getDecimal("C_DISCOUNT").toPlainString(), newBalance));
+        bw.newLine();
+        bw.write(String.format("%s,%s,%s,%s,%s", warehouse.getString("W_STREET_1"), warehouse.getString("W_STREET_2"), warehouse.getString("W_CITY"), warehouse.getString("W_STATE"), warehouse.getString("W_ZIP")));
+        bw.newLine();
+        bw.write(String.format("%s,%s,%s,%s,%s", warehouse.getString("D_STREET_1"), warehouse.getString("D_STREET_2"), warehouse.getString("D_CITY"), warehouse.getString("D_STATE"), warehouse.getString("D_ZIP")));
+        bw.newLine();
+        bw.write(String.format("%s", payment));
+        bw.newLine();
+        bw.flush();
     }
 
     private void processDeliveryXact(Session session, String[] data) {

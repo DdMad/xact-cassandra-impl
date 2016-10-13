@@ -206,7 +206,7 @@ public class XactProcessor {
         // For each district
         for (int i = 1; i <= 10; i++) {
             // Get smallest O_ID
-            Row order = session.execute(String.format("SELECT C_ID, MIN(O_ID) FROM orders WHERE W_ID = %s AND D_ID = %d AND O_CARRIER_ID = NULL", wId, i)).one();
+            Row order = session.execute(String.format("SELECT O_ID, C_ID FROM orders WHERE W_ID = %s AND D_ID = %d AND O_CARRIER_ID = NULL", wId, i)).one();
             String oId = order.getString("O_ID");
 
             // Update O_CARRIER_ID
@@ -250,9 +250,9 @@ public class XactProcessor {
         ResultSet top10 = session.execute(String.format("SELECT W_ID, D_ID, C_ID, C_BALANCE FROM customer LIMIT 10"));
         for (Row r : top10) {
             // Get name
-            Row customerConstant = session.execute(String.format("SELECT C_FIRST, C_MIDDLE, C_LAST FROM customer_constant_data WHERE C_ID = %s", r.getString("C_ID"))).one();
+            Row customerConstant = session.execute(String.format("SELECT C_FIRST, C_MIDDLE, C_LAST FROM customer_constant_data WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", r.getString("W_ID"), r.getString("D_ID"), r.getString("C_ID"))).one();
             String wName = session.execute(String.format("SELECT W_NAME FROM warehouse WHERE W_ID = %s", r.getString("W_ID"))).one().getString("W_NAME");
-            String dName = session.execute(String.format("SELECT D_NAME FROM district WHERE D_ID = %s", r.getString("D_ID"))).one().getString("D_NAME");
+            String dName = session.execute(String.format("SELECT D_NAME FROM district WHERE W_ID = %s AND D_ID = %s", r.getString("W_ID"), r.getString("D_ID"))).one().getString("D_NAME");
 
             // Write output
             bw.write(String.format("%s,%s,%s,%s,%s,%s", customerConstant.getString("C_FIRST"), customerConstant.getString("C_MIDDLE"), customerConstant.getString("C_LAST"), customerConstant.getDecimal("C_BALANCE").toPlainString(), wName, dName));

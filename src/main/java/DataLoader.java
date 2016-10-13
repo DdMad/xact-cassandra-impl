@@ -47,19 +47,19 @@ public class DataLoader {
             logger.info("Process file: " + name);
 
             if (name.equals(DATA_CUSTOMER)) {
-//                loadCustomerData(session);
+                loadCustomerData(session);
             } else if (name.equals(DATA_DISTRICT)) {
                 loadDistrictData(session);
             } else if (name.equals(DATA_ITEM)) {
-//                loadItemData(session);
+                loadItemData(session);
             } else if (name.equals(DATA_ORDER)) {
-//                loadOrderData(session);
+                loadOrderData(session);
             } else if (name.equals(DATA_ORDER_LINE)) {
-//                loadOrderLineData(session);
+                loadOrderLineData(session);
             } else if (name.equals(DATA_STOCK)) {
-//                loadStockData(session);
+                loadStockData(session);
             } else if (name.equals(DATA_WAREHOUSE)) {
-//                loadWarehouseData(session);
+                loadWarehouseData(session);
             } else {
                 logger.warn("Wrong data file for " + name + "!");
             }
@@ -168,7 +168,7 @@ public class DataLoader {
             String sQuantity = new DecimalFormat("0").format(new BigDecimal(data[2]));
             String sYtd = new DecimalFormat("0.00").format(new BigDecimal(data[3]));
             String query = String.format("INSERT INTO stock (W_ID, I_ID, S_QUANTITY, S_YTD, S_ORDER_CNT, S_REMOTE_CNT) VALUES (%s, %s, %s, %s, %s, %s)", data[0], data[1], sQuantity, sYtd, data[4], data[5]);
-            String queryConstant = String.format("INSERT INTO stock_constant_data (W_ID, I_ID, S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10, S_DATA) VALUES (%s, %s, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", data[0], data[1], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15], data[16]);
+            String queryConstant = String.format("INSERT INTO stock_constant_data (W_ID, I_ID, S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10) VALUES (%s, %s, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", data[0], data[1], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15]);
             String queryUnused = String.format("INSERT INTO stock_unused_data (W_ID, I_ID, S_DATA) VALUES (%s, %s, '%s')", data[0], data[1], data[16]);
             session.execute(query);
             session.execute(queryConstant);

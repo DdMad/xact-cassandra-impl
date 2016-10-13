@@ -28,12 +28,12 @@ public class Test {
             e.printStackTrace();
         }
 
-//        DataLoader loader = new DataLoader(System.getProperty("user.dir") + DATA_DIRECTORY);
-//        try {
-//            loader.loadData(session);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        DataLoader loader = new DataLoader(System.getProperty("user.dir") + DATA_DIRECTORY);
+        try {
+            loader.loadData(session);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         cluster.close();
     }

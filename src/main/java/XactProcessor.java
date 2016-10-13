@@ -185,7 +185,7 @@ public class XactProcessor {
         session.execute(String.format("UPDATE district SET D_YTD = %s WHERE W_ID = %s AND D_ID = %s", district.getDecimal("D_YTD").add(new BigDecimal(payment)).toPlainString(), wId, dId));
 
         // Update C_BALANCE C_YTD_PAYMENT C_PAYMENT_CNT
-        session.execute(String.format("UPDATE customer SET C_BALANCE = %s, C_YTD_PAYMENT = %f, C_PAYMENT_CNT = %d WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", newBalance.toPlainString(), customer.getFloat("C_YTD_PAYMENT") + Float.parseFloat(payment), customer.getInt("C_PAYMENT_CNT") + 1));
+        session.execute(String.format("UPDATE customer SET C_BALANCE = %s, C_YTD_PAYMENT = %f, C_PAYMENT_CNT = C_PAYMENT_CNT + 1 WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", newBalance.toPlainString(), customer.getFloat("C_YTD_PAYMENT") + Float.parseFloat(payment), wId, dId, cId));
 
         // Write output
         bw.write(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s", wId, dId, cId, customer.getString("C_FIRST"), customer.getString("C_MIDDLE"), customer.getString("C_LAST"), customer.getString("C_STREET_1"), customer.getString("C_STREET_2"), customer.getString("C_CITY"), customer.getString("C_STATE"), customer.getString("C_ZIP"), customer.getString("C_PHONE"), customer.getString("C_SINCE"), customer.getString("C_CREDIT"), customer.getDecimal("C_CREDIT_LIM").toPlainString(), customer.getDecimal("C_DISCOUNT").toPlainString(), newBalance));
@@ -200,22 +200,52 @@ public class XactProcessor {
     }
 
     private void processDeliveryXact(Session session, String[] data) {
+        String wId = data[1];
+        String carrierId = data[2];
 
+        // For each district
+        for (int i = 1; i <= 10; i++) {
+            // Get smallest O_ID
+            Row order = session.execute(String.format("SELECT C_ID, MIN(O_ID) FROM orders WHERE W_ID = %s AND D_ID = %d AND O_CARRIER_ID = NULL", wId, i)).one();
+            String oId = order.getString("O_ID");
+
+            // Update O_CARRIER_ID
+            session.execute(String.format("UPDATE orders SET O_CARRIER_ID = %s WHERE W_ID = %s AND D_ID = %d AND O_ID = %s", carrierId, wId, i, oId));
+
+            // Update all order-lines
+            String currentTime = new Timestamp(System.currentTimeMillis()).toString();
+            session.execute(String.format("UPDATE order_line SET OL_DELIVERY_D = %s WHERE W_ID = %s AND D_ID = %d AND O_ID = %s", currentTime, wId, i, oId));
+
+            // Update customer
+            BigDecimal b = session.execute(String.format("SELECT SUM(OL_AMOUNT) FROM order_line WHERE W_ID = %s AND D_ID = %d AND O_ID = %s", wId, i, oId)).one().getDecimal(0);
+            String cId = order.getString("C_ID");
+            session.execute(String.format("UPDATE customer SET C_BALANCE = C_BALANCE + %s, C_DELIVERY_CNT = C_DELIVERY_CNT + 1 WHERE W_ID = %s AND D_ID = %d AND C_ID = %s", b.toPlainString(), wId, i, cId));
+        }
     }
 
     private void processOrderStatusXact(Session session, String[] data) {
+        String wId = data[1];
+        String dId = data[2];
+        String cId = data[3];
 
     }
 
     private void processStockLevelXact(Session session, String[] data) {
+        String wId = data[1];
+        String dId = data[2];
+        String stockThreshold = data[3];
+        String lastItemAmount = data[4];
 
     }
 
     private void processPopularItemXact(Session session, String[] data) {
+        String wId = data[1];
+        String dId = data[2];
+        String lastOrdeerAmount = data[3];
 
     }
 
     private void processTopBalanceXact(Session session, String[] data) {
-
+        
     }
 }

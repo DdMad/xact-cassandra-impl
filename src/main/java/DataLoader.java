@@ -19,13 +19,16 @@ public class DataLoader {
     private static final String DATA_STOCK = "stock.csv";
     private static final String DATA_WAREHOUSE = "warehouse.csv";
 
+    private static final boolean THRESHOLD_ON = true;
+    private static final int THRESHOLD = 500;
+
     private String dataFileDir;
     private BufferedReader br;
 
     private Logger logger;
 
     public DataLoader(String dir) {
-        logger = Logger.getLogger(DatabaseBuilder.class.getName());
+        logger = Logger.getLogger(DataLoader.class.getName());
         String log4JPropertyFile = System.getProperty("user.dir") + "/log4j.properties";
         Properties p = new Properties();
         try {
@@ -47,19 +50,19 @@ public class DataLoader {
             logger.info("Process file: " + name);
 
             if (name.equals(DATA_CUSTOMER)) {
-                loadCustomerData(session);
+//                loadCustomerData(session);
             } else if (name.equals(DATA_DISTRICT)) {
-                loadDistrictData(session);
+//                loadDistrictData(session);
             } else if (name.equals(DATA_ITEM)) {
-                loadItemData(session);
+//                loadItemData(session);
             } else if (name.equals(DATA_ORDER)) {
-                loadOrderData(session);
+//                loadOrderData(session);
             } else if (name.equals(DATA_ORDER_LINE)) {
                 loadOrderLineData(session);
             } else if (name.equals(DATA_STOCK)) {
-                loadStockData(session);
+//                loadStockData(session);
             } else if (name.equals(DATA_WAREHOUSE)) {
-                loadWarehouseData(session);
+//                loadWarehouseData(session);
             } else {
                 logger.warn("Wrong data file for " + name + "!");
             }
@@ -68,7 +71,8 @@ public class DataLoader {
 
     private void loadCustomerData(Session session) throws IOException {
         String dataLine = br.readLine();
-        while (dataLine != null) {
+        int counter = 0;
+        while (dataLine != null && (!THRESHOLD_ON || (THRESHOLD_ON && counter < THRESHOLD))) {
             String[] data = dataLine.split(",");
             String cCreditLim = new DecimalFormat("0.00").format(new BigDecimal(data[14]));
             String cDiscount = new DecimalFormat("0.0000").format(new BigDecimal(data[15]));
@@ -82,6 +86,7 @@ public class DataLoader {
 
 //            logger.info("Finish processing row: " + dataLine);
             dataLine = br.readLine();
+            counter++;
         }
 
         logger.info("Complete loading custom column family!");
@@ -89,7 +94,8 @@ public class DataLoader {
 
     private void loadDistrictData(Session session) throws IOException {
         String dataLine = br.readLine();
-        while (dataLine != null) {
+        int counter = 0;
+        while (dataLine != null && (!THRESHOLD_ON || (THRESHOLD_ON && counter < THRESHOLD))) {
             String[] data = dataLine.split(",");
             String cTax = new DecimalFormat("0.0000").format(new BigDecimal(data[8]));
             String cYtd = new DecimalFormat("0.00").format(new BigDecimal(data[9]));
@@ -100,6 +106,7 @@ public class DataLoader {
 
 //            logger.info("Finish processing row: " + dataLine);
             dataLine = br.readLine();
+            counter++;
         }
 
         logger.info("Complete loading district column family!");
@@ -107,7 +114,8 @@ public class DataLoader {
 
     private void loadItemData(Session session) throws IOException {
         String dataLine = br.readLine();
-        while (dataLine != null) {
+        int counter = 0;
+        while (dataLine != null && (!THRESHOLD_ON || (THRESHOLD_ON && counter < THRESHOLD))) {
             String[] data = dataLine.split(",");
             String iPrice = new DecimalFormat("0.00").format(new BigDecimal(data[2]));
             String query = String.format("INSERT INTO item (I_ID, I_NAME, I_PRICE, I_IM_ID) VALUES (%s, '%s', %s, %s)", data[0], data[1], iPrice, data[3]);
@@ -117,6 +125,7 @@ public class DataLoader {
 
 //            logger.info("Finish processing row: " + dataLine);
             dataLine = br.readLine();
+            counter++;
         }
 
         logger.info("Complete loading item column family!");
@@ -124,15 +133,20 @@ public class DataLoader {
 
     private void loadOrderData(Session session) throws IOException {
         String dataLine = br.readLine();
-        while (dataLine != null) {
+        int counter = 0;
+        while (dataLine != null && (!THRESHOLD_ON || (THRESHOLD_ON && counter < THRESHOLD))) {
             String[] data = dataLine.split(",");
             String oOlCnt = new DecimalFormat("0").format(new BigDecimal(data[5]));
             String oAllLocal = new DecimalFormat("0").format(new BigDecimal(data[6]));
             String query = String.format("INSERT INTO orders (W_ID, D_ID, O_ID, C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, O_ENTRY_D) VALUES (%s, %s, %s, %s, %s, %s, %s, '%s')", data[0], data[1], data[2], data[3], data[4], oOlCnt, oAllLocal, data[7]);
+            if (data[4].equals("null")) {
+                query = String.format("INSERT INTO orders (W_ID, D_ID, O_ID, C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, O_ENTRY_D) VALUES (%s, %s, %s, %s, %d, %s, %s, '%s')", data[0], data[1], data[2], data[3], -1, oOlCnt, oAllLocal, data[7]);
+            }
             session.execute(query);
 
 //            logger.info("Finish processing row: " + dataLine);
             dataLine = br.readLine();
+            counter++;
         }
 
         logger.info("Complete loading order column family!");
@@ -140,7 +154,8 @@ public class DataLoader {
 
     private void loadOrderLineData(Session session) throws IOException {
         String dataLine = br.readLine();
-        while (dataLine != null) {
+        int counter = 0;
+        while (dataLine != null && (!THRESHOLD_ON || (THRESHOLD_ON && counter < THRESHOLD))) {
             String[] data = dataLine.split(",");
             String olAmount = new DecimalFormat("0.00").format(new BigDecimal(data[6]));
             String olQuantity = new DecimalFormat("0").format(new BigDecimal(data[8]));
@@ -156,6 +171,7 @@ public class DataLoader {
 
 //            logger.info("Finish processing row: " + dataLine);
             dataLine = br.readLine();
+            counter++;
         }
 
         logger.info("Complete loading order_line column family!");
@@ -163,7 +179,8 @@ public class DataLoader {
 
     private void loadStockData(Session session) throws IOException {
         String dataLine = br.readLine();
-        while (dataLine != null) {
+        int counter = 0;
+        while (dataLine != null && (!THRESHOLD_ON || (THRESHOLD_ON && counter < THRESHOLD))) {
             String[] data = dataLine.split(",");
             String sQuantity = new DecimalFormat("0").format(new BigDecimal(data[2]));
             String sYtd = new DecimalFormat("0.00").format(new BigDecimal(data[3]));
@@ -176,6 +193,7 @@ public class DataLoader {
 
 //            logger.info("Finish processing row: " + dataLine);
             dataLine = br.readLine();
+            counter++;
         }
 
         logger.info("Complete loading stock column family!");
@@ -183,7 +201,8 @@ public class DataLoader {
 
     private void loadWarehouseData(Session session) throws IOException {
         String dataLine = br.readLine();
-        while (dataLine != null) {
+        int counter = 0;
+        while (dataLine != null && (!THRESHOLD_ON || (THRESHOLD_ON && counter < THRESHOLD))) {
             String[] data = dataLine.split(",");
             String w_tax = new DecimalFormat("0.0000").format(new BigDecimal(data[7]));
             String w_ytd = new DecimalFormat("0.00").format(new BigDecimal(data[8]));
@@ -192,6 +211,7 @@ public class DataLoader {
 
 //            logger.info("Finish processing row: " + dataLine);
             dataLine = br.readLine();
+            counter++;
         }
 
         logger.info("Complete loading warehouse column family!");

@@ -238,7 +238,7 @@ public class XactProcessor {
         Row customerConstant = session.execute(String.format("SELECT C_FIRST, C_MIDDLE, C_LAST FROM customer_constant_data WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", wId, dId, cId)).one();
 
         // Get last order of customer
-        Row lastOrder = session.execute(String.format("SELECT MAX(OID), O_ENTRY_D, O_CARRIER_ID, O_OL_CNT FROM orders WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", wId, dId, cId)).one();
+        Row lastOrder = session.execute(String.format("SELECT MAX(O_ID), O_ENTRY_D, O_CARRIER_ID, O_OL_CNT FROM orders WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", wId, dId, cId)).one();
         int oId = lastOrder.getInt("O_ID");
 
         // Write output

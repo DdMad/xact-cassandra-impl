@@ -8,7 +8,9 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Created by ddmad on 13/10/16.
@@ -21,7 +23,7 @@ public class XactProcessor {
     private Logger logger;
 
     public XactProcessor(String dir) {
-        logger = Logger.getLogger(DatabaseBuilder.class.getName());
+        logger = Logger.getLogger(XactProcessor.class.getName());
         String log4JPropertyFile = System.getProperty("user.dir") + "/log4j.properties";
         Properties p = new Properties();
         try {
@@ -92,7 +94,7 @@ public class XactProcessor {
         // Update D_NEXT_O_ID by adding one
         session.execute(String.format("UPDATE district_next_o_id SET D_NEXT_O_ID = %d WHERE W_ID = %s AND D_ID = %s", oId + 1, wId, dId));
 
-        for (int i = 0; i < m; i++) {
+        for (int i = 1; i <= m; i++) {
             String[] itemData = br.readLine().split(",");
             String olIId = itemData[0];
             String olSupplyWId = itemData[1];
@@ -125,8 +127,8 @@ public class XactProcessor {
             // Create a new order-line (May improve the stock)
             String columnName = "S_DIST_" + (Integer.parseInt(dId) == 10 ? "10" : ("0" + dId));
             String sDist = session.execute(String.format("SELECT %s FROM stock_constant_data WHERE W_ID = %s AND I_ID = %s", columnName, olSupplyWId, olIId)).one().getString(columnName);
-            session.execute(String.format("INSERT INTO order_line (W_ID, D_ID, O_ID, OL_NUMBER, I_ID, OL_DELIVERY_D, OL_AMOUNT, OL_SUPPLY_W_ID, OL_QUANTITY) VALUES (%s, %s, %s, %d, %s, %s, %s, %s, %s)", wId, dId, oId, i, olIId, "NULL", itemAmount.toPlainString(), olSupplyWId, olQuantity));
-            session.execute(String.format("INSERT INTO order_line_unused_data (W_ID, D_ID, O_ID, OL_NUMBER, OL_DIST_INFO) VALUES (%s, %s, %s, %s, '%s')", wId, dId, oId, i, sDist));
+            session.execute(String.format("INSERT INTO order_line (W_ID, D_ID, O_ID, OL_NUMBER, I_ID, OL_DELIVERY_D, OL_AMOUNT, OL_SUPPLY_W_ID, OL_QUANTITY) VALUES (%s, %s, %d, %d, %s, %s, %s, %s, %s)", wId, dId, oId, i, olIId, "NULL", itemAmount.toPlainString(), olSupplyWId, olQuantity));
+            session.execute(String.format("INSERT INTO order_line_unused_data (W_ID, D_ID, O_ID, OL_NUMBER, OL_DIST_INFO) VALUES (%s, %s, %d, %d, '%s')", wId, dId, oId, i, sDist));
 
             // Add output information to list
             itemNumberList.add(olIId);
@@ -139,7 +141,7 @@ public class XactProcessor {
 
         // Create new order
         String currentTime = new Timestamp(System.currentTimeMillis()).toString();
-        session.execute(String.format("INSERT INTO orders (W_ID, D_ID, O_ID, C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, O_ENTRY_D) VALUES (%s, %s, %d, %s, %s, %s, %s, '%s')", wId, dId, oId, cId, "NULL", m, oAllLocal, currentTime));
+        session.execute(String.format("INSERT INTO orders (W_ID, D_ID, O_ID, C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, O_ENTRY_D) VALUES (%s, %s, %d, %s, %d, %s, %s, '%s')", wId, dId, oId, cId, -1, m, oAllLocal, currentTime));
 
         // Get customer information
         Row customer = session.execute(String.format("SELECT C_LAST, C_CREDIT, C_DISCOUNT FROM customer_constant_data WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", wId, dId, cId)).one();
@@ -154,7 +156,7 @@ public class XactProcessor {
         bw.newLine();
         bw.write(String.format("%s,%s", wTax.toPlainString(), dTax.toPlainString()));
         bw.newLine();
-        bw.write(String.format("%s,%s", oId, currentTime));
+        bw.write(String.format("%d,%s", oId, currentTime));
         bw.newLine();
         bw.write(String.format("%d,%s", m, totalAmount.toPlainString()));
         bw.newLine();
@@ -188,11 +190,11 @@ public class XactProcessor {
         session.execute(String.format("UPDATE customer SET C_BALANCE = %s, C_YTD_PAYMENT = %f, C_PAYMENT_CNT = C_PAYMENT_CNT + 1 WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", newBalance.toPlainString(), customer.getFloat("C_YTD_PAYMENT") + Float.parseFloat(payment), wId, dId, cId));
 
         // Write output
-        bw.write(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s", wId, dId, cId, customer.getString("C_FIRST"), customer.getString("C_MIDDLE"), customer.getString("C_LAST"), customer.getString("C_STREET_1"), customer.getString("C_STREET_2"), customer.getString("C_CITY"), customer.getString("C_STATE"), customer.getString("C_ZIP"), customer.getString("C_PHONE"), customer.getString("C_SINCE"), customer.getString("C_CREDIT"), customer.getDecimal("C_CREDIT_LIM").toPlainString(), customer.getDecimal("C_DISCOUNT").toPlainString(), newBalance));
+        bw.write(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s", wId, dId, cId, customerConstant.getString("C_FIRST"), customerConstant.getString("C_MIDDLE"), customerConstant.getString("C_LAST"), customerConstant.getString("C_STREET_1"), customerConstant.getString("C_STREET_2"), customerConstant.getString("C_CITY"), customerConstant.getString("C_STATE"), customerConstant.getString("C_ZIP"), customerConstant.getString("C_PHONE"), customerConstant.getString("C_SINCE"), customerConstant.getString("C_CREDIT"), customerConstant.getDecimal("C_CREDIT_LIM").toPlainString(), customerConstant.getDecimal("C_DISCOUNT").toPlainString(), newBalance));
         bw.newLine();
         bw.write(String.format("%s,%s,%s,%s,%s", warehouse.getString("W_STREET_1"), warehouse.getString("W_STREET_2"), warehouse.getString("W_CITY"), warehouse.getString("W_STATE"), warehouse.getString("W_ZIP")));
         bw.newLine();
-        bw.write(String.format("%s,%s,%s,%s,%s", warehouse.getString("D_STREET_1"), warehouse.getString("D_STREET_2"), warehouse.getString("D_CITY"), warehouse.getString("D_STATE"), warehouse.getString("D_ZIP")));
+        bw.write(String.format("%s,%s,%s,%s,%s", district.getString("D_STREET_1"), district.getString("D_STREET_2"), district.getString("D_CITY"), district.getString("D_STATE"), district.getString("D_ZIP")));
         bw.newLine();
         bw.write(String.format("%s", payment));
         bw.newLine();
@@ -206,43 +208,132 @@ public class XactProcessor {
         // For each district
         for (int i = 1; i <= 10; i++) {
             // Get smallest O_ID
-            Row order = session.execute(String.format("SELECT O_ID, C_ID FROM orders WHERE W_ID = %s AND D_ID = %d AND O_CARRIER_ID = NULL", wId, i)).one();
-            String oId = order.getString("O_ID");
+            Row order = session.execute(String.format("SELECT MIN(O_ID), C_ID, O_OL_CNT FROM orders WHERE W_ID = %s AND D_ID = %d AND O_CARRIER_ID = -1", wId, i)).one();
+            int oId = order.getInt("system.min(O_ID)");
 
             // Update O_CARRIER_ID
-            session.execute(String.format("UPDATE orders SET O_CARRIER_ID = %s WHERE W_ID = %s AND D_ID = %d AND O_ID = %s", carrierId, wId, i, oId));
+            session.execute(String.format("UPDATE orders SET O_CARRIER_ID = %s WHERE W_ID = %s AND D_ID = %d AND O_ID = %d", carrierId, wId, i, oId));
 
             // Update all order-lines
             String currentTime = new Timestamp(System.currentTimeMillis()).toString();
-            session.execute(String.format("UPDATE order_line SET OL_DELIVERY_D = %s WHERE W_ID = %s AND D_ID = %d AND O_ID = %s", currentTime, wId, i, oId));
+            int m = order.getDecimal("O_OL_CNT").intValue();
+            for (int j = 1; j < m; j++) {
+                session.execute(String.format("UPDATE order_line SET OL_DELIVERY_D = '%s' WHERE W_ID = %s AND D_ID = %d AND O_ID = %d AND OL_NUMBER = %d", currentTime, wId, i, oId, j));
+            }
 
             // Update customer
-            BigDecimal b = session.execute(String.format("SELECT SUM(OL_AMOUNT) FROM order_line WHERE W_ID = %s AND D_ID = %d AND O_ID = %s", wId, i, oId)).one().getDecimal(0);
-            String cId = order.getString("C_ID");
-            session.execute(String.format("UPDATE customer SET C_BALANCE = C_BALANCE + %s, C_DELIVERY_CNT = C_DELIVERY_CNT + 1 WHERE W_ID = %s AND D_ID = %d AND C_ID = %s", b.toPlainString(), wId, i, cId));
+            BigDecimal b = session.execute(String.format("SELECT SUM(OL_AMOUNT) FROM order_line WHERE W_ID = %s AND D_ID = %d AND O_ID = %d", wId, i, oId)).one().getDecimal(0);
+            int cId = order.getInt("C_ID");
+            session.execute(String.format("UPDATE customer SET C_BALANCE = C_BALANCE + %s, C_DELIVERY_CNT = C_DELIVERY_CNT + 1 WHERE W_ID = %s AND D_ID = %d AND C_ID = %d", b.toPlainString(), wId, i, cId));
         }
     }
 
-    private void processOrderStatusXact(Session session, String[] data) {
+    private void processOrderStatusXact(Session session, String[] data) throws IOException {
         String wId = data[1];
         String dId = data[2];
         String cId = data[3];
 
+        // Get customer name and balance
+        BigDecimal cBalance = session.execute(String.format("SELECT C_BALANCE FROM customer WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", wId, dId, cId)).one().getDecimal("C_BALANCE");
+        Row customerConstant = session.execute(String.format("SELECT C_FIRST, C_MIDDLE, C_LAST FROM customer_constant_data WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", wId, dId, cId)).one();
+
+        // Get last order of customer
+        Row lastOrder = session.execute(String.format("SELECT MAX(OID), O_ENTRY_D, O_CARRIER_ID, O_OL_CNT FROM orders WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", wId, dId, cId)).one();
+        int oId = lastOrder.getInt("O_ID");
+
+        // Write output
+        bw.write(String.format("%s,%s,%s,%s", customerConstant.getString("C_FIRST"), customerConstant.getString("C_MIDDLE"), customerConstant.getString("C_LAST"), cBalance.toPlainString()));
+        bw.newLine();
+        bw.write(String.format("%d,%s,%d", oId, lastOrder.getTimestamp("O_ENTRY_D").toString(), lastOrder.getInt("O_CARRIER_ID")));
+        bw.newLine();
+
+        // For each item in last order of customer
+        int m = lastOrder.getDecimal("O_OL_CNT").intValue();
+        for (int i = 1; i < m; i++) {
+            // Get order-line
+            Row orderLine = session.execute(String.format("SELECT I_ID, OL_SUPPLY_W_ID, OL_QUANTITY, OL_AMOUNT, OL_DELIVERY_D FROM order_line WHERE W_ID = %s AND D_ID = %s AND O_ID = %d AND OL_NUMBER = %d", wId, dId, oId, i)).one();
+
+            // Write output
+            bw.write(String.format("%d,%d,%s,%s,%s", orderLine.getInt("I_ID"), orderLine.getInt("OL_SUPPLY_W_ID"), orderLine.getDecimal("OL_QUANTITY").toPlainString(), orderLine.getDecimal("OL_AMOUNT").toPlainString(), orderLine.getTimestamp("OL_DELIVERY_D").toString()));
+            bw.newLine();
+        }
+        bw.flush();
     }
 
-    private void processStockLevelXact(Session session, String[] data) {
+    private void processStockLevelXact(Session session, String[] data) throws IOException {
         String wId = data[1];
         String dId = data[2];
-        String stockThreshold = data[3];
-        String lastItemAmount = data[4];
+        BigDecimal stockThreshold = new BigDecimal(data[3]);
+        int lastItemAmount = Integer.parseInt(data[4]);
 
+        int count = 0;
+
+        // Get next available O_ID
+        int nextOId= session.execute(String.format("SELECT D_NEXT_O_ID FROM district_next_o_id WHERE W_ID = %s AND D_ID = %s", wId, dId)).one().getInt("D_NEXT_O_ID");
+
+        for (int i = nextOId - lastItemAmount; i < nextOId; i++) {
+            // Get number of order-line
+            int m = session.execute(String.format("SELECT O_OL_CNT FROM orders WHERE W_ID = %s AND D_ID = %s AND O_ID = %d", wId, dId, i)).one().getDecimal("O_OL_CNT").intValue();
+
+            for (int j = 1; j < m; j++) {
+                // Get I_ID
+                int iId = session.execute(String.format("SELECT I_ID FROM order_line WHERE W_ID = %s AND D_ID = %s AND O_ID = %d AND OL_NUMBER = %d", wId, dId, i, j)).one().getInt("I_ID");
+
+                // Get S_QUANTITY
+                BigDecimal sQuantity = session.execute(String.format("SELECT S_QUANTITY FROM stock WHERE W_ID = %s AND I_ID = %d", wId, iId)).one().getDecimal("S_QUANTITY");
+
+                count = sQuantity.compareTo(stockThreshold) < 0 ? count + 1 : count;
+            }
+        }
+
+        // Write output
+        bw.write(String.format("%d", count));
+        bw.newLine();
+        bw.flush();
     }
 
-    private void processPopularItemXact(Session session, String[] data) {
+    private void processPopularItemXact(Session session, String[] data) throws IOException {
         String wId = data[1];
         String dId = data[2];
-        String lastOrdeerAmount = data[3];
+        int lastOrderAmount = Integer.parseInt(data[3]);
 
+        // Get next available O_ID
+        int nextOId= session.execute(String.format("SELECT D_NEXT_O_ID FROM district_next_o_id WHERE W_ID = %s AND D_ID = %s", wId, dId)).one().getInt("D_NEXT_O_ID");
+
+        Set<String> itemList = new HashSet<>();
+        ArrayList<Set<String>> itemSetList = new ArrayList<>();
+
+        // Write output
+        bw.write(String.format("%s,%s", wId, dId));
+        bw.newLine();
+        bw.write(String.format("%d", lastOrderAmount));
+        bw.newLine();
+
+        for (int i = nextOId - lastOrderAmount; i < nextOId; i++) {
+            // Get order
+            Row order = session.execute(String.format("SELECT C_ID, O_ENTRY_D, O_POPULAR_I_NAME, O_POPULAR_OL_QUANTITY, O_ITEM_SET FROM orders WHERE W_ID = %s AND D_ID = %s AND O_ID = %d", wId, dId, i)).one();
+            Row customer = session.execute(String.format("SELECT C_FIRST, C_MIDDLE, C_LAST FROM customer_constant_data WHERE W_ID = %s AND D_ID = %s AND C_ID = %d", wId, dId, order.getInt("C_ID"))).one();
+
+            bw.write(String.format("%d,%s,%s,%s,%s,%s,%s", i, order.getTimestamp("O_ENTRY_D").toString(), customer.getString("C_FIRST"), customer.getString("C_MIDDLE"), customer.getString("C_LAST"), order.getString("O_POPULAR_I_NAME"), order.getDecimal("O_POPULAR_OL_QUANTITY").toPlainString()));
+            bw.newLine();
+
+            itemList.add(order.getString("O_POPULAR_I_NAME"));
+            itemSetList.add(order.getSet("O_ITEM_SET", String.class));
+        }
+
+        // Calculate percentage
+        for (String item : itemList) {
+            int count = 0;
+
+            for (Set<String> s : itemSetList) {
+                count = s.contains(item) ? count + 1 : count;
+            }
+
+            float percentage = ((float) count) / ((float) lastOrderAmount);
+            bw.write(String.format("%s,%f", item, percentage));
+            bw.newLine();
+        }
+        bw.flush();
     }
 
     private void processTopBalanceXact(Session session) throws IOException {
@@ -250,9 +341,9 @@ public class XactProcessor {
         ResultSet top10 = session.execute(String.format("SELECT W_ID, D_ID, C_ID, C_BALANCE FROM customer LIMIT 10"));
         for (Row r : top10) {
             // Get name
-            Row customerConstant = session.execute(String.format("SELECT C_FIRST, C_MIDDLE, C_LAST FROM customer_constant_data WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", r.getString("W_ID"), r.getString("D_ID"), r.getString("C_ID"))).one();
-            String wName = session.execute(String.format("SELECT W_NAME FROM warehouse WHERE W_ID = %s", r.getString("W_ID"))).one().getString("W_NAME");
-            String dName = session.execute(String.format("SELECT D_NAME FROM district WHERE W_ID = %s AND D_ID = %s", r.getString("W_ID"), r.getString("D_ID"))).one().getString("D_NAME");
+            Row customerConstant = session.execute(String.format("SELECT C_FIRST, C_MIDDLE, C_LAST FROM customer_constant_data WHERE W_ID = %d AND D_ID = %d AND C_ID = %d", r.getInt("W_ID"), r.getInt("D_ID"), r.getInt("C_ID"))).one();
+            String wName = session.execute(String.format("SELECT W_NAME FROM warehouse WHERE W_ID = %d", r.getInt("W_ID"))).one().getString("W_NAME");
+            String dName = session.execute(String.format("SELECT D_NAME FROM district WHERE W_ID = %d AND D_ID = %d", r.getInt("W_ID"), r.getInt("D_ID"))).one().getString("D_NAME");
 
             // Write output
             bw.write(String.format("%s,%s,%s,%s,%s,%s", customerConstant.getString("C_FIRST"), customerConstant.getString("C_MIDDLE"), customerConstant.getString("C_LAST"), customerConstant.getDecimal("C_BALANCE").toPlainString(), wName, dName));

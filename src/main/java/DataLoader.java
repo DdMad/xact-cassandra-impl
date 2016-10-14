@@ -1,3 +1,5 @@
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
@@ -5,7 +7,9 @@ import org.apache.log4j.PropertyConfigurator;
 import java.io.*;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Created by ddmad on 12/10/16.
@@ -19,7 +23,7 @@ public class DataLoader {
     private static final String DATA_STOCK = "stock.csv";
     private static final String DATA_WAREHOUSE = "warehouse.csv";
 
-    private static final boolean THRESHOLD_ON = true;
+    private static final boolean THRESHOLD_ON = false;
     private static final int THRESHOLD = 500;
 
     private String dataFileDir;
@@ -56,9 +60,9 @@ public class DataLoader {
             } else if (name.equals(DATA_ITEM)) {
 //                loadItemData(session);
             } else if (name.equals(DATA_ORDER)) {
-//                loadOrderData(session);
+                loadOrderData(session);
             } else if (name.equals(DATA_ORDER_LINE)) {
-                loadOrderLineData(session);
+//                loadOrderLineData(session);
             } else if (name.equals(DATA_STOCK)) {
 //                loadStockData(session);
             } else if (name.equals(DATA_WAREHOUSE)) {
@@ -67,6 +71,9 @@ public class DataLoader {
                 logger.warn("Wrong data file for " + name + "!");
             }
         }
+
+        // After loading data
+        postLoad(session);
     }
 
     private void loadCustomerData(Session session) throws IOException {
@@ -138,9 +145,9 @@ public class DataLoader {
             String[] data = dataLine.split(",");
             String oOlCnt = new DecimalFormat("0").format(new BigDecimal(data[5]));
             String oAllLocal = new DecimalFormat("0").format(new BigDecimal(data[6]));
-            String query = String.format("INSERT INTO orders (W_ID, D_ID, O_ID, C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, O_ENTRY_D) VALUES (%s, %s, %s, %s, %s, %s, %s, '%s')", data[0], data[1], data[2], data[3], data[4], oOlCnt, oAllLocal, data[7]);
+            String query = String.format("INSERT INTO orders (W_ID, D_ID, O_ID, C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, O_ENTRY_D, O_POPULAR_I_NAME, O_POPULAR_OL_QUANTITY, O_ITEM_SET) VALUES (%s, %s, %s, %s, %s, %s, %s, '%s', NULL, 0, {})", data[0], data[1], data[2], data[3], data[4], oOlCnt, oAllLocal, data[7]);
             if (data[4].equals("null")) {
-                query = String.format("INSERT INTO orders (W_ID, D_ID, O_ID, C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, O_ENTRY_D) VALUES (%s, %s, %s, %s, %d, %s, %s, '%s')", data[0], data[1], data[2], data[3], -1, oOlCnt, oAllLocal, data[7]);
+                query = String.format("INSERT INTO orders (W_ID, D_ID, O_ID, C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, O_ENTRY_D, O_POPULAR_I_NAME, O_POPULAR_OL_QUANTITY, O_ITEM_SET) VALUES (%s, %s, %s, %s, %d, %s, %s, '%s', NULL, 0, {})", data[0], data[1], data[2], data[3], -1, oOlCnt, oAllLocal, data[7]);
             }
             session.execute(query);
 
@@ -215,5 +222,51 @@ public class DataLoader {
         }
 
         logger.info("Complete loading warehouse column family!");
+    }
+
+    private void postLoad(Session session) {
+        // Get all orders
+        ResultSet orders = session.execute("SELECT * FROM orders");
+
+        for (Row order : orders) {
+            // Get number of order-line for order
+            int m = order.getDecimal("O_OL_CNT").intValue();
+
+            int wId = order.getInt("W_ID");
+            int dId = order.getInt("D_ID");
+            int oId = order.getInt("O_ID");
+
+            String popularIName = "";
+            BigDecimal popularQuantity = new BigDecimal("0");
+            Set<String> itemSet = new HashSet<>();
+
+            for (int i = 1; i <= m; i++) {
+                Row orderLine = session.execute(String.format("SELECT I_ID, OL_QUANTITY FROM order_line WHERE W_ID = %d AND D_ID = %d AND O_ID = %d AND OL_NUMBER = %d", wId, dId, oId, i)).one();
+                int iId = orderLine.getInt("I_ID");
+                BigDecimal olQuantity = orderLine.getDecimal("OL_QUANTITY");
+
+                String iName = session.execute(String.format("SELECT I_NAME FROM item WHERE I_ID = %d", iId)).one().getString("I_NAME");
+                itemSet.add(iName);
+
+                if (popularIName.equals("") || popularQuantity.compareTo(olQuantity) < 0) {
+                    popularQuantity = olQuantity;
+                    popularIName = iName;
+                }
+            }
+
+            // Convert Set to String
+            StringBuilder sb = new StringBuilder();
+            sb.append('{');
+            for (String s : itemSet) {
+                sb.append('\'');
+                sb.append(s);
+                sb.append('\'');
+                sb.append(',');
+            }
+            sb.replace(sb.length() - 1, sb.length(), "}");
+
+            // Update order
+            session.execute(String.format("UPDATE orders SET O_POPULAR_I_NAME = '%s', O_POPULAR_OL_QUANTITY = %s, O_ITEM_SET = %s WHERE W_ID = %d AND D_ID = %d AND O_ID = %d", popularIName, popularQuantity.toPlainString(), sb.toString(), wId, dId, oId));
+        }
     }
 }

@@ -259,7 +259,9 @@ public class XactProcessor {
 
             System.out.println(String.format("SELECT I_ID, OL_SUPPLY_W_ID, OL_QUANTITY, OL_AMOUNT, OL_DELIVERY_D FROM order_line WHERE W_ID = %s AND D_ID = %s AND O_ID = %d AND OL_NUMBER = %d", wId, dId, oId, i));
             // Write output
-            if (orderLine == null || orderLine.getTimestamp("OL_DELIVERY_D") == null) {
+            if (orderLine == null) {
+                break;
+            } else if (orderLine.getTimestamp("OL_DELIVERY_D") == null) {
                 bw.write(String.format("%d,%d,%s,%s,%s", orderLine.getInt("I_ID"), orderLine.getInt("OL_SUPPLY_W_ID"), orderLine.getDecimal("OL_QUANTITY").toPlainString(), orderLine.getDecimal("OL_AMOUNT").toPlainString(), "NULL"));
             } else {
                 bw.write(String.format("%d,%d,%s,%s,%s", orderLine.getInt("I_ID"), orderLine.getInt("OL_SUPPLY_W_ID"), orderLine.getDecimal("OL_QUANTITY").toPlainString(), orderLine.getDecimal("OL_AMOUNT").toPlainString(), orderLine.getTimestamp("OL_DELIVERY_D").toString()));

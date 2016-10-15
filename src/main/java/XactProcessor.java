@@ -88,6 +88,11 @@ public class XactProcessor {
         ArrayList<String> olAmountList = new ArrayList<>();
         ArrayList<String> sQuantityList = new ArrayList<>();
 
+        // Calculate for popular
+        String popularIName = "";
+        BigDecimal popularQuantity = new BigDecimal("0");
+        Set<String> itemSet = new HashSet<>();
+
         // Get D_NEXT_O_ID
         int oId = session.execute(String.format("SELECT D_NEXT_O_ID FROM district_next_o_id WHERE W_ID = %s AND D_ID = %s", wId, dId)).one().getInt("D_NEXT_O_ID");
 
@@ -137,11 +142,31 @@ public class XactProcessor {
             quantityList.add(olQuantity);
             olAmountList.add(itemAmount.toPlainString());
             sQuantityList.add(adjustedQty.toPlainString());
+
+            // Calculate for popular
+            String iName = item.getString("I_NAME");
+            itemSet.add(iName);
+
+            if (popularIName.equals("") || popularQuantity.compareTo(new BigDecimal(olQuantity)) < 0) {
+                popularQuantity = new BigDecimal(olQuantity);
+                popularIName = iName;
+            }
         }
+
+        // Convert Set to String
+        StringBuilder sb = new StringBuilder();
+        sb.append('{');
+        for (String s : itemSet) {
+            sb.append('\'');
+            sb.append(s);
+            sb.append('\'');
+            sb.append(',');
+        }
+        sb.replace(sb.length() - 1, sb.length(), "}");
 
         // Create new order
         String currentTime = new Timestamp(System.currentTimeMillis()).toString();
-        session.execute(String.format("INSERT INTO orders (W_ID, D_ID, O_ID, C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, O_ENTRY_D) VALUES (%s, %s, %d, %s, %d, %s, %s, '%s')", wId, dId, oId, cId, -1, m, oAllLocal, currentTime));
+        session.execute(String.format("INSERT INTO orders (W_ID, D_ID, O_ID, C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, O_ENTRY_D, O_POPULAR_I_NAME, O_POPULAR_OL_QUANTITY, O_ITEM_SET) VALUES (%s, %s, %d, %s, %d, %s, %s, '%s', '%s', %s, %s)", wId, dId, oId, cId, -1, m, oAllLocal, currentTime, popularIName, popularQuantity.toPlainString(), sb.toString()));
 
         // Get customer information
         Row customer = session.execute(String.format("SELECT C_LAST, C_CREDIT, C_DISCOUNT FROM customer_constant_data WHERE W_ID = %s AND D_ID = %s AND C_ID = %s", wId, dId, cId)).one();

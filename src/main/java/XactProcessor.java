@@ -277,12 +277,10 @@ public class XactProcessor {
 
         // For each item in last order of customer
         int m = lastOrder.getDecimal("O_OL_CNT").intValue();
-        System.out.println(m);
         for (int i = 1; i <= m; i++) {
             // Get order-line
             Row orderLine = session.execute(String.format("SELECT I_ID, OL_SUPPLY_W_ID, OL_QUANTITY, OL_AMOUNT, OL_DELIVERY_D FROM order_line WHERE W_ID = %s AND D_ID = %s AND O_ID = %d AND OL_NUMBER = %d", wId, dId, oId, i)).one();
-
-            System.out.println(String.format("SELECT I_ID, OL_SUPPLY_W_ID, OL_QUANTITY, OL_AMOUNT, OL_DELIVERY_D FROM order_line WHERE W_ID = %s AND D_ID = %s AND O_ID = %d AND OL_NUMBER = %d", wId, dId, oId, i));
+            
             // Write output
             if (orderLine == null) {
                 break;

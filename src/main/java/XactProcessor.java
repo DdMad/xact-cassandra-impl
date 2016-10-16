@@ -37,7 +37,9 @@ public class XactProcessor {
         xactFileDir = dir;
     }
 
-    public void processXact(Session session) throws IOException {
+    public long processXact(Session session, long[] xactCount, long[] xactTime) throws IOException {
+        long count = 0;
+
         br = new BufferedReader(new FileReader(xactFileDir));
 
         File output = new File(xactFileDir + "-out.txt");
@@ -51,26 +53,79 @@ public class XactProcessor {
             String[] data = dataLine.split(",");
             String type = data[0];
             if (type.equals("N")) {
+                long start = System.currentTimeMillis();
+
                 processNewOrderXact(session, data);
+
+                long end = System.currentTimeMillis();
+                long duration = end - start;
+                xactCount[0]++;
+                xactTime[0] += duration;
             } else if (type.equals("P")) {
+                long start = System.currentTimeMillis();
+
                 processPaymentXact(session, data);
+
+                long end = System.currentTimeMillis();
+                long duration = end - start;
+                xactCount[1]++;
+                xactTime[1] += duration;
             } else if (type.equals("D")) {
+                long start = System.currentTimeMillis();
+
                 processDeliveryXact(session, data);
+
+                long end = System.currentTimeMillis();
+                long duration = end - start;
+                xactCount[2]++;
+                xactTime[2] += duration;
             } else if (type.equals("O")) {
+                long start = System.currentTimeMillis();
+
                 processOrderStatusXact(session, data);
+
+                long end = System.currentTimeMillis();
+                long duration = end - start;
+                xactCount[3]++;
+                xactTime[3] += duration;
             } else if (type.equals("S")) {
+                long start = System.currentTimeMillis();
+
                 processStockLevelXact(session, data);
+
+                long end = System.currentTimeMillis();
+                long duration = end - start;
+                xactCount[4]++;
+                xactTime[4] += duration;
             } else if (type.equals("I")) {
+                long start = System.currentTimeMillis();
+
                 processPopularItemXact(session, data);
+
+                long end = System.currentTimeMillis();
+                long duration = end - start;
+                xactCount[5]++;
+                xactTime[5] += duration;
             } else if (type.equals("T")) {
+                long start = System.currentTimeMillis();
+
                 processTopBalanceXact(session);
+
+                long end = System.currentTimeMillis();
+                long duration = end - start;
+                xactCount[6]++;
+                xactTime[6] += duration;
             } else {
                 logger.warn("Wrong transaction type!");
             }
 
             logger.info("Finish processing transaction: " + dataLine);
+
+            count++;
             dataLine = br.readLine();
         }
+
+        return count;
     }
 
     private void processNewOrderXact(Session session, String[] data) throws IOException {
@@ -242,6 +297,9 @@ public class XactProcessor {
 
             // Update all order-lines
             String currentTime = new Timestamp(System.currentTimeMillis()).toString();
+            if (order.isNull("O_OL_CNT")) {
+                continue;
+            }
             int m = order.getDecimal("O_OL_CNT").intValue();
             for (int j = 1; j <= m; j++) {
                 session.execute(String.format("UPDATE order_line SET OL_DELIVERY_D = '%s' WHERE W_ID = %s AND D_ID = %d AND O_ID = %d AND OL_NUMBER = %d", currentTime, wId, i, oId, j));
@@ -280,7 +338,7 @@ public class XactProcessor {
         for (int i = 1; i <= m; i++) {
             // Get order-line
             Row orderLine = session.execute(String.format("SELECT I_ID, OL_SUPPLY_W_ID, OL_QUANTITY, OL_AMOUNT, OL_DELIVERY_D FROM order_line WHERE W_ID = %s AND D_ID = %s AND O_ID = %d AND OL_NUMBER = %d", wId, dId, oId, i)).one();
-            
+
             // Write output
             if (orderLine == null) {
                 break;
@@ -307,7 +365,12 @@ public class XactProcessor {
 
         for (int i = nextOId - lastItemAmount; i < nextOId; i++) {
             // Get number of order-line
-            int m = session.execute(String.format("SELECT O_OL_CNT FROM orders WHERE W_ID = %s AND D_ID = %s AND O_ID = %d", wId, dId, i)).one().getDecimal("O_OL_CNT").intValue();
+            Row olCnt = session.execute(String.format("SELECT O_OL_CNT FROM orders WHERE W_ID = %s AND D_ID = %s AND O_ID = %d", wId, dId, i)).one();
+            if (olCnt == null || olCnt.isNull("O_OL_CNT")) {
+                continue;
+            }
+
+            int m = olCnt.getDecimal("O_OL_CNT").intValue();
 
             for (int j = 1; j <= m; j++) {
                 // Get I_ID
@@ -346,9 +409,13 @@ public class XactProcessor {
         for (int i = nextOId - lastOrderAmount; i < nextOId; i++) {
             // Get order
             Row order = session.execute(String.format("SELECT C_ID, O_ENTRY_D, O_POPULAR_I_NAME, O_POPULAR_OL_QUANTITY, O_ITEM_SET FROM orders WHERE W_ID = %s AND D_ID = %s AND O_ID = %d", wId, dId, i)).one();
+            if (order == null || order.isNull("C_ID")) {
+                continue;
+            }
+
             Row customer = session.execute(String.format("SELECT C_FIRST, C_MIDDLE, C_LAST FROM customer_constant_data WHERE W_ID = %s AND D_ID = %s AND C_ID = %d", wId, dId, order.getInt("C_ID"))).one();
 
-            if (order.getString("O_POPULAR_I_NAME") == null || order.getDecimal("O_POPULAR_OL_QUANTITY") == null || order.getSet("O_ITEM_SET", String.class) == null) {
+            if (customer == null || order.getString("O_POPULAR_I_NAME") == null || order.getDecimal("O_POPULAR_OL_QUANTITY") == null || order.getSet("O_ITEM_SET", String.class) == null) {
                 continue;
             }
 

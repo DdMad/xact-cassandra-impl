@@ -54,19 +54,19 @@ public class DataLoader {
             logger.info("Process file: " + name);
 
             if (name.equals(DATA_CUSTOMER)) {
-//                loadCustomerData(session);
+                loadCustomerData(session);
             } else if (name.equals(DATA_DISTRICT)) {
-//                loadDistrictData(session);
+                loadDistrictData(session);
             } else if (name.equals(DATA_ITEM)) {
-//                loadItemData(session);
+                loadItemData(session);
             } else if (name.equals(DATA_ORDER)) {
                 loadOrderData(session);
             } else if (name.equals(DATA_ORDER_LINE)) {
-//                loadOrderLineData(session);
+                loadOrderLineData(session);
             } else if (name.equals(DATA_STOCK)) {
-//                loadStockData(session);
+                loadStockData(session);
             } else if (name.equals(DATA_WAREHOUSE)) {
-//                loadWarehouseData(session);
+                loadWarehouseData(session);
             } else {
                 logger.warn("Wrong data file for " + name + "!");
             }
